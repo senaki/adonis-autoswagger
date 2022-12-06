@@ -695,17 +695,22 @@ class AutoSwagger {
         if (json !== "") {
             try {
                 let j = JSON.parse("{" + json + "}");
-                j = this.jsonToRef(j);
-                requestBody = {
-                    content: {
-                        "application/json": {
-                            schema: {
-                                type: "object",
+                if (j.hasOwnProperty('content')) {
+                    requestBody = j;
+                }
+                else {
+                    j = this.jsonToRef(j);
+                    requestBody = {
+                        content: {
+                            "application/json": {
+                                schema: {
+                                    type: "object",
+                                },
+                                example: j,
                             },
-                            example: j,
                         },
-                    },
-                };
+                    };
+                }
             }
             catch (_a) {
                 console.error("Invalid JSON for " + line);
@@ -897,7 +902,7 @@ class AutoSwagger {
         return __awaiter(this, void 0, void 0, function* () {
             const models = {};
             const p = path.join(this.options.path, "/Models");
-            if (!(0, fs_1.existsSync)(p)) {
+            if (!fs_1.existsSync(p)) {
                 return models;
             }
             const files = yield this.getFiles(p, []);
@@ -922,7 +927,7 @@ class AutoSwagger {
         return __awaiter(this, void 0, void 0, function* () {
             let interfaces = {};
             const p = path.join(this.options.path, "/Interfaces");
-            if (!(0, fs_1.existsSync)(p)) {
+            if (!fs_1.existsSync(p)) {
                 return interfaces;
             }
             const files = yield this.getFiles(p, []);
@@ -949,7 +954,8 @@ class AutoSwagger {
             line = line.trim();
             if (line.startsWith("export") && !line.startsWith("export default"))
                 return;
-            if (line.startsWith("//") ||
+            if (line.startsWith("import") ||
+                line.startsWith("//") ||
                 line.startsWith("/*") ||
                 line.startsWith("*"))
                 return;
@@ -977,9 +983,14 @@ class AutoSwagger {
             if (index > 0) {
                 meta = lines[index - 1];
             }
-            const s = line.split(":");
-            let field = s[0];
-            let type = s[1];
+            let m = undefined;
+            let field = undefined;
+            let type = undefined;
+            m = line.match(/\"?(?<field>[^ \"]+)\"?:\s*(?<value>[^ \"\:]+)/i);
+            if (m !== null) {
+                field = m["groups"]['field'];
+                type = m["groups"]['value'];
+            }
             let notRequired = false;
             if (!field || !type)
                 return;
@@ -1000,7 +1011,7 @@ class AutoSwagger {
             field = field.trim();
             type = type.trim();
             if (this.options.snakeCase) {
-                field = (0, change_case_1.snakeCase)(field);
+                field = change_case_1.snakeCase(field);
             }
             let isArray = false;
             if (type.includes("[]")) {
@@ -1094,7 +1105,7 @@ class AutoSwagger {
             field = field.replace("get ", "");
             type = type.replace("{", "");
             if (this.options.snakeCase) {
-                field = (0, change_case_1.snakeCase)(field);
+                field = change_case_1.snakeCase(field);
             }
             let indicator = "type";
             if (example === null) {

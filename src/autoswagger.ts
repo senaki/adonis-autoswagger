@@ -759,17 +759,22 @@ export class AutoSwagger {
     if (json !== "") {
       try {
         let j = JSON.parse("{" + json + "}");
-        j = this.jsonToRef(j);
-        requestBody = {
-          content: {
-            "application/json": {
-              schema: {
-                type: "object",
+        if(j.hasOwnProperty('content')){
+          requestBody = j;
+        }
+        else{
+          j = this.jsonToRef(j);
+          requestBody = {
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                },
+                example: j,
               },
-              example: j,
             },
-          },
-        };
+          };
+      }
       } catch {
         console.error("Invalid JSON for " + line);
       }
@@ -1109,19 +1114,13 @@ export class AutoSwagger {
         meta = lines[index - 1];
       }
 
-      let m:string = "";
-      let field:string = "";
-      let type:string = "";
+      let m:string = undefined;
+      let field:string = undefined;
+      let type:string = undefined;
       m = line.match( /\"?(?<field>[^ \"]+)\"?:\s*(?<value>[^ \"\:]+)/i );
       if(m !== null){
           field = m["groups"]['field'];
           type = m["groups"]['value'];
-      }
-      else{
-        //legacy
-        const s = line.split(":");
-        field = s[0];
-        type = s[1];
       }
       let notRequired = false;
 
