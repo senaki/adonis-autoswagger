@@ -462,9 +462,18 @@ class AutoSwagger {
         }
         if (typeof meta !== "undefined") {
             if (meta.includes("@required")) {
+<<<<<<< HEAD
                 let mod = this.getBetweenBrackets(meta, "required");
                 if (mod !== "" && 'false' == mod.replace(" ", "")) {
                     required = false;
+=======
+                var mod = this.getBetweenBrackets(meta, "required");
+                if (mod !== "") {
+                    required = ('false' == (mod.replace(" ", ""))) ? false : true;
+                }
+                else {
+                    required = true;
+>>>>>>> 0b81533616345721fd178ddea1ac30312e4eb8c3
                 }
             }
             let aev = this.getBetweenBrackets(meta, "allowEmptyValue");
