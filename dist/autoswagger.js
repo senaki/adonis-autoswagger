@@ -428,6 +428,7 @@ class AutoSwagger {
         let type = "string";
         let example = null;
         let enums = [];
+        let allowEmpty = false;
         if (line.startsWith("@paramUse")) {
             let use = this.getBetweenBrackets(line, "paramUse");
             const used = use.split(",");
@@ -461,8 +462,12 @@ class AutoSwagger {
         }
         if (typeof meta !== "undefined") {
             if (meta.includes("@required")) {
-                required = true;
+                let mod = this.getBetweenBrackets(meta, "required");
+                if (mod !== "" && 'false' == mod.replace(" ", "")) {
+                    required = false;
+                }
             }
+            let aev = this.getBetweenBrackets(meta, "allowEmptyValue");
             let en = this.getBetweenBrackets(meta, "enum");
             example = this.getBetweenBrackets(meta, "example");
             const mtype = this.getBetweenBrackets(meta, "type");
@@ -472,6 +477,10 @@ class AutoSwagger {
             if (en !== "") {
                 enums = en.split(",");
                 example = enums[0];
+            }
+            if (aev !== "") {
+                //allow empty value
+                allowEmpty = (aev.replace(" ", "") == "true") ? true : false;
             }
         }
         if (example === "" || example === null) {
