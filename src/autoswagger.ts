@@ -461,6 +461,7 @@ export class AutoSwagger {
     let type = "string";
     let example: any = null;
     let enums = [];
+    let allowEmpty:boolean = false; 
 
     if (line.startsWith("@paramUse")) {
       let use = this.getBetweenBrackets(line, "paramUse");
@@ -500,8 +501,15 @@ export class AutoSwagger {
 
     if (typeof meta !== "undefined") {
       if (meta.includes("@required")) {
-        required = true;
+          var mod:any = this.getBetweenBrackets(meta, "required");
+          if ( mod !== ""){
+              required =('false'==(mod.replace(" ","")))?false:true;
+          }
+          else{
+              required = true;
+          }
       }
+      let aev:string = this.getBetweenBrackets(meta, "allowEmptyValue");
       let en = this.getBetweenBrackets(meta, "enum");
       example = this.getBetweenBrackets(meta, "example");
       const mtype = this.getBetweenBrackets(meta, "type");
@@ -511,6 +519,10 @@ export class AutoSwagger {
       if (en !== "") {
         enums = en.split(",");
         example = enums[0];
+      }
+      if(aev !== ""){
+        //allow empty value
+        allowEmpty = (aev.replace(" ", "") == "true")?true:false;
       }
     }
 
