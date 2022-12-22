@@ -26,6 +26,13 @@ const HTTPStatusCode = require("http-status-code");
 const _ = require("lodash/core");
 const change_case_1 = require("change-case");
 const fs_1 = require("fs");
+;
+const objectCasting = (obj) => {
+    if (obj && typeof obj === 'object') {
+        return obj;
+    }
+    return undefined;
+};
 class AutoSwagger {
     constructor() {
         this.parsedFiles = [];
@@ -223,8 +230,8 @@ class AutoSwagger {
                         if (tag === "")
                             return;
                         globalTags.push({
-                            name: tag,
-                            description: "Everything related to " + tag,
+                            name: String(tag),
+                            description: "Everything related to " + String(tag),
                         });
                     });
                     route.methods.forEach((method) => {
@@ -336,6 +343,8 @@ class AutoSwagger {
         let merge = Object.assign(initial, custom);
         let params = [];
         for (const [key, value] of Object.entries(merge)) {
+            if (false)
+                console.log(key);
             params.push(value);
         }
         return params;
@@ -368,7 +377,6 @@ class AutoSwagger {
     }
     parseAnnotations(lines) {
         let summary = "";
-        let upload = "";
         let description = "";
         let responses = {};
         let requestBody = {};
@@ -410,6 +418,8 @@ class AutoSwagger {
             }
         });
         for (const [key, value] of Object.entries(responses)) {
+            if (false)
+                console.log(typeof value);
             if (typeof headers[key] !== undefined) {
                 responses[key]["headers"] = headers[key];
             }
@@ -428,7 +438,6 @@ class AutoSwagger {
         let type = "string";
         let example = null;
         let enums = [];
-        let allowEmpty = false;
         if (line.startsWith("@paramUse")) {
             let use = this.getBetweenBrackets(line, "paramUse");
             const used = use.split(",");
@@ -467,7 +476,6 @@ class AutoSwagger {
                     required = false;
                 }
             }
-            let aev = this.getBetweenBrackets(meta, "allowEmptyValue");
             let en = this.getBetweenBrackets(meta, "enum");
             example = this.getBetweenBrackets(meta, "example");
             const mtype = this.getBetweenBrackets(meta, "type");
@@ -477,10 +485,6 @@ class AutoSwagger {
             if (en !== "") {
                 enums = en.split(",");
                 example = enums[0];
-            }
-            if (aev !== "") {
-                //allow empty value
-                allowEmpty = (aev.replace(" ", "") == "true") ? true : false;
             }
         }
         if (example === "" || example === null) {
@@ -578,7 +582,6 @@ class AutoSwagger {
         let responses = {};
         line = line.replace("@responseBody ", "");
         let [status, res] = line.split(" - ");
-        let sum = "";
         if (typeof status === "undefined")
             return;
         responses[status] = {};
@@ -617,11 +620,11 @@ class AutoSwagger {
                     app = JSON.parse("{" + append + "}");
                 }
                 catch (_b) { }
-                res = sum = "Returns a **single** instance of type `" + ref + "`";
+                res = "Returns a **single** instance of type `" + ref + "`";
                 // references a schema array
                 if (ref.includes("[]")) {
                     ref = ref.replace("[]", "");
-                    res = sum = "Returns a **list** of type `" + ref + "`";
+                    res = "Returns a **list** of type `" + ref + "`";
                     responses[status]["content"] = {
                         "application/json": {
                             schema: {
@@ -658,7 +661,6 @@ class AutoSwagger {
             }
         }
         responses[status]["description"] = res;
-        // responses[status]['summary'] = sum
         return responses;
     }
     jsonToRef(json) {
@@ -822,19 +824,20 @@ class AutoSwagger {
                 exc.includes("timestamps"))
                 continue;
             let rel = "";
-            let example = value["example"];
+            //fix: TS2571 on Typescript ~4.9 using typeof type guard
+            let example = objectCasting(value)["example"];
             if (parent === "" && only.length > 0 && !only.includes(key))
                 continue;
-            if (typeof value["$ref"] !== "undefined") {
-                rel = value["$ref"].replace("#/components/schemas/", "");
+            if (typeof objectCasting(value)["$ref"] !== "undefined") {
+                rel = objectCasting(value)["$ref"].replace("#/components/schemas/", "");
             }
-            if (typeof value["items"] !== "undefined" &&
-                typeof value["items"]["$ref"] !== "undefined") {
-                rel = value["items"]["$ref"].replace("#/components/schemas/", "");
+            if (typeof objectCasting(value)["items"] !== "undefined" &&
+                typeof objectCasting(value)["items"]["$ref"] !== "undefined") {
+                rel = objectCasting(value)["items"]["$ref"].replace("#/components/schemas/", "");
             }
-            if (typeof value["items"] !== "undefined") {
+            if (typeof objectCasting(value)["items"] !== "undefined") {
                 isArray = true;
-                example = value["items"]["example"];
+                example = objectCasting(value)["items"]["example"];
             }
             if (rel !== "") {
                 // skip related models of main schema
@@ -846,9 +849,9 @@ class AutoSwagger {
                     !include.includes(key)) {
                     continue;
                 }
-                if (typeof value["items"] !== "undefined" &&
-                    typeof value["items"]["$ref"] !== "undefined") {
-                    rel = value["items"]["$ref"].replace("#/components/schemas/", "");
+                if (typeof objectCasting(value)["items"] !== "undefined" &&
+                    typeof objectCasting(value)["items"]["$ref"] !== "undefined") {
+                    rel = objectCasting(value)["items"]["$ref"].replace("#/components/schemas/", "");
                 }
                 if (rel == "") {
                     return;
@@ -927,7 +930,8 @@ class AutoSwagger {
                     properties: this.parseModelProperties(data),
                     description: "Model",
                 };
-                models[name] = schema;
+                if (name !== "")
+                    models[name] = schema;
             }
             return models;
         });
@@ -945,7 +949,8 @@ class AutoSwagger {
                 const data = yield readFile(file, "utf8");
                 file = file.replace(".ts", "");
                 const split = file.split("/");
-                const name = split[split.length - 1].replace(".ts", "");
+                //const name = 
+                split[split.length - 1].replace(".ts", "");
                 file = file.replace("app/", "/app/");
                 interfaces = Object.assign(Object.assign({}, interfaces), this.parseInterfaces(data));
             }
@@ -992,20 +997,21 @@ class AutoSwagger {
             if (index > 0) {
                 meta = lines[index - 1];
             }
-            let m = undefined;
-            let field = undefined;
-            let type = undefined;
+            let m = "";
+            let field = "";
+            let type = "";
             m = line.match(/\"?(?<field>[^ \"]+)\"?:\s*(?<value>[^ \"\:]+)/i);
-            if (m !== null) {
+            if (m !== null && m !== "") {
                 field = m["groups"]['field'];
                 type = m["groups"]['value'];
             }
-            let notRequired = false;
-            if (!field || !type)
+            //let notRequired:boolean = false;
+            if ("" === field || typeof field === "undefined" ||
+                "" === type || typeof type === "undefined")
                 return;
             if (field.endsWith("?")) {
                 field = field.replace("?", "");
-                notRequired = true;
+                //notRequired = true;
             }
             let en = this.getBetweenBrackets(meta, "enum");
             let example = this.getBetweenBrackets(meta, "example");
@@ -1076,7 +1082,7 @@ class AutoSwagger {
             let s2 = s[1].replace(/;/g, "").split(":");
             if (line.startsWith("public get")) {
                 s = line.split("public get");
-                let s2 = s[1].replace(/;/g, "").split(":");
+                s2 = s[1].replace(/;/g, "").split(":");
             }
             let field = s2[0];
             let type = s2[1];
