@@ -609,7 +609,6 @@ class AutoSwagger {
                     console.error("Invalid JSON for: " + line);
                 }
             }
-            // references a schema
             if (typeof ref !== "undefined" && ref !== "") {
                 const inc = this.getBetweenBrackets(res, "with");
                 const exc = this.getBetweenBrackets(res, "exclude");
@@ -621,7 +620,6 @@ class AutoSwagger {
                 }
                 catch (_b) { }
                 res = "Returns a **single** instance of type `" + ref + "`";
-                // references a schema array
                 if (ref.includes("[]")) {
                     ref = ref.replace("[]", "");
                     res = "Returns a **list** of type `" + ref + "`";
@@ -683,7 +681,6 @@ class AutoSwagger {
                         app = JSON.parse("{" + append + "}");
                     }
                     catch (_a) { }
-                    // references a schema array
                     if (ref.includes("[]")) {
                         ref = ref.replace("[]", "");
                         v = [
@@ -728,7 +725,6 @@ class AutoSwagger {
             }
         }
         let ref = line.substring(line.indexOf("<") + 1, line.lastIndexOf(">"));
-        // references a schema
         if (ref !== "" && json === "") {
             const inc = this.getBetweenBrackets(line, "with");
             const exc = this.getBetweenBrackets(line, "exclude");
@@ -739,7 +735,6 @@ class AutoSwagger {
                 app = JSON.parse("{" + append + "}");
             }
             catch (_b) { }
-            // references a schema array
             if (ref.includes("[]")) {
                 ref = ref.replace("[]", "");
                 requestBody = {
@@ -794,7 +789,6 @@ class AutoSwagger {
         only = only.length === 1 && only[0] === "" ? [] : only;
         if (typeof properties === "undefined")
             return;
-        // skip nested if not requested
         if (parent !== "" &&
             schema !== "" &&
             parent.includes(".") &&
@@ -824,7 +818,6 @@ class AutoSwagger {
                 exc.includes("timestamps"))
                 continue;
             let rel = "";
-            //fix: TS2571 on Typescript ~4.9 using typeof type guard
             let example = objectCasting(value)["example"];
             if (parent === "" && only.length > 0 && !only.includes(key))
                 continue;
@@ -840,7 +833,6 @@ class AutoSwagger {
                 example = objectCasting(value)["items"]["example"];
             }
             if (rel !== "") {
-                // skip related models of main schema
                 if (parent === "" &&
                     rel !== "" &&
                     typeof this.schemas[rel] !== "undefined" &&
@@ -871,9 +863,6 @@ class AutoSwagger {
         }
         return props;
     }
-    /*
-      extract path-variables, tags and the uri-pattern
-    */
     extractInfos(p) {
         let parameters = {};
         let pattern = "";
@@ -949,7 +938,6 @@ class AutoSwagger {
                 const data = yield readFile(file, "utf8");
                 file = file.replace(".ts", "");
                 const split = file.split("/");
-                //const name = 
                 split[split.length - 1].replace(".ts", "");
                 file = file.replace("app/", "/app/");
                 interfaces = Object.assign(Object.assign({}, interfaces), this.parseInterfaces(data));
@@ -961,7 +949,6 @@ class AutoSwagger {
         let interfaces = {};
         let name = "";
         let props = {};
-        // remove empty lines
         data = data.replace(/\t/g, "").replace(/^(?=\n)$|^\s*|\s*$|\n\n+/gm, "");
         const lines = data.split("\n");
         lines.forEach((line, index) => {
@@ -1005,13 +992,11 @@ class AutoSwagger {
                 field = m["groups"]['field'];
                 type = m["groups"]['value'];
             }
-            //let notRequired:boolean = false;
             if ("" === field || typeof field === "undefined" ||
                 "" === type || typeof type === "undefined")
                 return;
             if (field.endsWith("?")) {
                 field = field.replace("?", "");
-                //notRequired = true;
             }
             let en = this.getBetweenBrackets(meta, "enum");
             let example = this.getBetweenBrackets(meta, "example");
@@ -1055,13 +1040,11 @@ class AutoSwagger {
     }
     parseModelProperties(data) {
         let props = {};
-        // remove empty lines
         data = data.replace(/\t/g, "").replace(/^(?=\n)$|^\s*|\s*$|\n\n+/gm, "");
         const lines = data.split("\n");
         let softDelete = false;
         lines.forEach((line, index) => {
             line = line.trim();
-            // skip comments
             if (line.includes("@swagger-softdelete") ||
                 line.includes("SoftDeletes")) {
                 softDelete = true;
@@ -1111,7 +1094,6 @@ class AutoSwagger {
             }
             field = field.trim();
             type = type.trim();
-            //TODO: make oneOf
             if (type.includes(" | ")) {
                 const types = type.split(" | ");
                 type = types.filter((t) => t !== "null")[0];
@@ -1126,7 +1108,6 @@ class AutoSwagger {
             if (example === null) {
                 example = "string";
             }
-            // if relation to another model
             if (type.includes("typeof")) {
                 s = type.split("typeof ");
                 type = "#/components/schemas/" + s[1].slice(0, -1);
@@ -1137,7 +1118,6 @@ class AutoSwagger {
                     type = type.toLowerCase();
                 }
                 else {
-                    // assume its a custom interface
                     indicator = "$ref";
                     type = "#/components/schemas/" + type;
                 }
@@ -1182,7 +1162,6 @@ class AutoSwagger {
             }
             prop[indicator] = type;
             prop["example"] = example;
-            // if array
             if (isArray) {
                 props[field] = { type: "array", items: prop };
             }
